@@ -28,6 +28,7 @@ namespace HAtxLib
         private int _port = -1;
         private string _url = null;
         private bool _debug = false;
+        private UIAutomatorService _uiService = null; // Lazy singleton instance
 
         public int Port
         {
@@ -62,11 +63,15 @@ namespace HAtxLib
 
         #region Global Settings
 
-        public int UINodeMaxWaitTime { get; set; } = 2000;
-        // Delay during detection
-        public int UINodeClickExistDelay { get; set; } = 60;
-        // Click delay
-        public int UINodeClickDelay { get; set; } = 100;
+        public int UINodeMaxWaitTime { get; set; } = AtxConstants.DEFAULT_UI_NODE_MAX_WAIT_TIME;
+        /// <summary>
+        /// Delay during UI node detection (milliseconds)
+        /// </summary>
+        public int UINodeClickExistDelay { get; set; } = AtxConstants.DEFAULT_UI_NODE_CLICK_EXIST_DELAY;
+        /// <summary>
+        /// Delay after UI node click (milliseconds)
+        /// </summary>
+        public int UINodeClickDelay { get; set; } = AtxConstants.DEFAULT_UI_NODE_CLICK_DELAY;
 
         #endregion
 
@@ -77,18 +82,21 @@ namespace HAtxLib
             if (init)
             {
                 _initer = new InitHelper(_client);
-                while (true)
+                
+                // Use RetryHelper to avoid infinite loop
+                bool initSuccess = RetryHelper.ExecuteWithRetry(
+                    action: () => _initer.Install(),
+                    maxAttempts: AtxConstants.DEFAULT_MAX_INIT_RETRY_ATTEMPTS,
+                    delayMs: AtxConstants.DEFAULT_RETRY_DELAY_MS,
+                    operationName: $"Device Initialization ({_serial})"
+                );
+
+                if (!initSuccess)
                 {
-                    try
-                    {
-                        _initer.Install();
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
+                    Log.Error($"HAtx<{_serial}> Failed to initialize device after {AtxConstants.DEFAULT_MAX_INIT_RETRY_ATTEMPTS} attempts");
+                    throw new ATXIniterException($"Failed to initialize device {_serial}");
                 }
+
                 Log.Info($"HAtx<{_serial}> Connect: {Connect()}");
                 HRuntime.Run("Run UIAUTOMATOR", () => Log.Info($"HAtx<{_serial}> RunUiautomator: {RunUiautomator()}"));
             }
@@ -149,11 +157,18 @@ namespace HAtxLib
         #endregion
 
         #region UI Service
+        /// <summary>
+        /// Gets the UIAutomator service instance (lazy singleton pattern)
+        /// </summary>
         private UIAutomatorService UIService
         {
             get
             {
-                return new UIAutomatorService(this);
+                if (_uiService == null)
+                {
+                    _uiService = new UIAutomatorService(this);
+                }
+                return _uiService;
             }
         }
         #endregion
@@ -172,7 +187,7 @@ namespace HAtxLib
         /// </summary>
         public void ShowInfo()
         {
-            _client.Shell("am", "start", "-W", "-n", "com.github.uiautomator/.IdentifyActivity", "-e", "theme", "black");
+            _client.Shell("am", "start", "-W", "-n", $"{AtxConstants.IDENTIFY_ACTIVITY}", "-e", "theme", "black");
         }
         #endregion
 
@@ -575,8 +590,8 @@ namespace HAtxLib
         public void AppUninstallAll(params string[] excludes)
         {
             List<string> list = new List<string>() {
-                "com.github.uiautomator",
-                "com.github.uiautomator.test"
+                AtxConstants.UIAUTOMATOR_PACKAGE,
+                AtxConstants.UIAUTOMATOR_TEST_PACKAGE
             };
             list.AddRange(excludes);
             var apps = _client.AppList("-3");
@@ -593,8 +608,8 @@ namespace HAtxLib
         public void AppStopAll(params string[] excludes)
         {
             List<string> list = new List<string>() {
-                "com.github.uiautomator",
-                "com.github.uiautomator.test"
+                AtxConstants.UIAUTOMATOR_PACKAGE,
+                AtxConstants.UIAUTOMATOR_TEST_PACKAGE
             };
             list.AddRange(excludes);
             List<string> apps = _client.AppRunningList();
@@ -701,9 +716,9 @@ namespace HAtxLib
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    Log.Warn($"AppWait iteration error for package '{package}': {ex.Message}");
                 }
                 finally
                 {
@@ -869,8 +884,10 @@ namespace HAtxLib
                         return JsonConvert.DeserializeObject<JsonRpcResponse>(result.Content);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log.Error($"JsonRpc failed for method '{method}': {ex.Message}");
+                    Log.Debug($"Stack trace: {ex.StackTrace}");
                     return null;
                 }
             });
@@ -898,15 +915,15 @@ namespace HAtxLib
             var argv = new string[] {
                 "pm",
                 "grant",
-                "com.github.uiautomator",
-                "android.permission.SYSTEM_ALERT_WINDOW",
-                "android.permission.ACCESS_FINE_LOCATION",
-                "android.permission.READ_PHONE_STATE"
+                AtxConstants.UIAUTOMATOR_PACKAGE,
+                AtxConstants.PERMISSION_SYSTEM_ALERT_WINDOW,
+                AtxConstants.PERMISSION_ACCESS_FINE_LOCATION,
+                AtxConstants.PERMISSION_READ_PHONE_STATE
             };
             _client.Shell(argv);
         }
 
-        private bool RunUiautomator(int timeout = 20)
+        private bool RunUiautomator(int timeout = AtxConstants.DEFAULT_UIAUTOMATOR_START_TIMEOUT)
         {
             bool service = UIService.Running();
             if (IsAlive() && service)
@@ -927,7 +944,7 @@ namespace HAtxLib
                 "-c",
                 "android.intent.category.LAUNCHER",
                 "-n",
-                "com.github.uiautomator/.ToastActivity",
+                AtxConstants.TOAST_ACTIVITY,
             };
             Log.Debug($"RunUiautomator: {_client.Shell(argv)}");
             Log.Debug($"Uiautomator Service Start: {UIService.Start()}");
@@ -947,7 +964,7 @@ namespace HAtxLib
                 Thread.Sleep(1000);
             }
             UIService.Stop();
-            string result = _client.Shell("am instrument -w -r -e debug false -e class com.github.uiautomator.stub.Stub com.github.uiautomator.test/android.support.test.runner.AndroidJUnitRunner");
+            string result = _client.Shell($"am instrument -w -r -e debug false -e class com.github.uiautomator.stub.Stub {AtxConstants.UIAUTOMATOR_TEST_PACKAGE}/android.support.test.runner.AndroidJUnitRunner");
             if (result.Contains("does not have a signature matching the target"))
             {
                 InitHelper initer = new InitHelper(_client);
@@ -958,7 +975,7 @@ namespace HAtxLib
 
         private void ShowFloatWindow(bool show = true)
         {
-            _client.Shell("am", "start", "-n", "com.github.uiautomator/.ToastActivity", "-e", "showFloatWindow", show.ToString().ToLower());
+            _client.Shell("am", "start", "-n", AtxConstants.TOAST_ACTIVITY, "-e", "showFloatWindow", show.ToString().ToLower());
         }
         #endregion
 
@@ -971,17 +988,18 @@ namespace HAtxLib
             private readonly string _abi;
             private readonly string _sdk;
 
-            private readonly static string ATX_APP_VERSION = "2.3.3";
-            private readonly static string ATX_AGENT_VERSION = "0.10.0";
+            // Use constants from AtxConstants
+            private readonly static string ATX_APP_VERSION = AtxConstants.ATX_APP_VERSION;
+            private readonly static string ATX_AGENT_VERSION = AtxConstants.ATX_AGENT_VERSION;
 
             private readonly static ReaderWriterLockSlim DownLock = new ReaderWriterLockSlim();
             private readonly static string CACHE_PATH = $"{AppDomain.CurrentDomain.BaseDirectory}/{Properties.Resources.CACHE_PATH}";
-            private readonly static string ATX_LISTEN_ADDR = "127.0.0.1:7912";
-            private readonly static string GITHUB_BASEURL = "https://github.com/openatx";
-            private readonly static string GITHUB_DOWN_APK_PATH = "/android-uiautomator-server/releases/download/";
-            private readonly static string GITHUB_DOWN_AGENT_PATH = "/atx-agent/releases/download/";
-            private readonly static string ANDROID_LOCAL_TMP_PATH = "/data/local/tmp/";
-            private readonly static string ATX_AGENT_PATH = "/data/local/tmp/atx-agent";
+            private readonly static string ATX_LISTEN_ADDR = AtxConstants.ATX_LISTEN_ADDR;
+            private readonly static string GITHUB_BASEURL = AtxConstants.GITHUB_BASEURL;
+            private readonly static string GITHUB_DOWN_APK_PATH = AtxConstants.GITHUB_DOWN_APK_PATH;
+            private readonly static string GITHUB_DOWN_AGENT_PATH = AtxConstants.GITHUB_DOWN_AGENT_PATH;
+            private readonly static string ANDROID_LOCAL_TMP_PATH = AtxConstants.ANDROID_LOCAL_TMP_PATH;
+            private readonly static string ATX_AGENT_PATH = AtxConstants.ATX_AGENT_PATH;
             private readonly static string[] ATX_APKS = new string[2] { "app-uiautomator", "app-uiautomator-test" };
             private readonly static Dictionary<string, string> ATX_AGENT_FILE_DICT = new Dictionary<string, string>() {
                 { "armeabi-v7a", "atx-agent_{0}_linux_armv7.tar.gz" },
@@ -1100,8 +1118,11 @@ namespace HAtxLib
                     }
                     return int.Parse(ov[2]) < int.Parse(nv[2]);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    Log.Warn($"IsAtxAgentOutdated version parsing failed: {ex.Message}");
+                    Log.Debug($"Stack trace: {ex.StackTrace}");
+                    // Return true to trigger reinstall if version check fails
                     return true;
                 }
             }
@@ -1112,8 +1133,8 @@ namespace HAtxLib
             {
                 if (IsAtxAppOutdated())
                 {
-                    _client.Shell("pm", "uninstall", "com.github.uiautomator");
-                    _client.Shell("pm", "uninstall", "com.github.uiautomator.test");
+                    _client.Shell("pm", "uninstall", AtxConstants.UIAUTOMATOR_PACKAGE);
+                    _client.Shell("pm", "uninstall", AtxConstants.UIAUTOMATOR_TEST_PACKAGE);
                     foreach (string app in ATX_APKS)
                     {
                         string tmp = $"{ANDROID_LOCAL_TMP_PATH}{app}.apk";
@@ -1129,8 +1150,8 @@ namespace HAtxLib
 
             public bool IsAtxAppOutdated()
             {
-                var apk_debug = _client.AppInfo("com.github.uiautomator");
-                var apk_debug_test = _client.AppInfo("com.github.uiautomator.test");
+                var apk_debug = _client.AppInfo(AtxConstants.UIAUTOMATOR_PACKAGE);
+                var apk_debug_test = _client.AppInfo(AtxConstants.UIAUTOMATOR_TEST_PACKAGE);
                 if (apk_debug == null || apk_debug_test == null)
                 {
                     return true;
@@ -1237,7 +1258,7 @@ namespace HAtxLib
                 {
                     _client.Shell("rm", $"{ANDROID_LOCAL_TMP_PATH}{app}.apk");
                 }
-                _client.Shell("pm", "uninstall", "com.github.uiautomator");
+                _client.Shell("pm", "uninstall", AtxConstants.UIAUTOMATOR_PACKAGE);
                 _client.Shell("pm", "uninstall", "com.github.uiautomator.test");
             }
             #endregion
