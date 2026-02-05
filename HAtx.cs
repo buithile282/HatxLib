@@ -15,11 +15,13 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using HAtxLib.Core;
+using HAtxLib.Configuration;
 
 namespace HAtxLib
 {
 
-    public class HAtx
+    public partial class HAtx
     {
         private readonly static HLog Log = HLog.Get<HAtx>("Core");
         private readonly string _serial;
@@ -28,11 +30,22 @@ namespace HAtxLib
         private int _port = -1;
         private string _url = null;
         private bool _debug = false;
+        private ScreenOperations _screenOperations;
+        private AppManager _appManager;
+        private InputMethodManager _inputMethodManager;
+        private DeviceManager _deviceManager;
 
         public int Port => _port;
         public string UDID => _serial;
         public ADBClient ADB => _client;
         public InitHelper Initer => _initer;
+        
+        internal string AtxAgentUrl => _url;
+        
+        public ScreenOperations Screen => _screenOperations ??= new ScreenOperations(this);
+        public AppManager Apps => _appManager ??= new AppManager(this);
+        public InputMethodManager IME => _inputMethodManager ??= new InputMethodManager(this);
+        public DeviceManager Device => _deviceManager ??= new DeviceManager(this);
 
         #region Global Settings
 
@@ -205,31 +218,12 @@ namespace HAtxLib
         /// </summary>
         public UADeviceInfo DeviceInfo()
         {
-            var json = JsonRpc("deviceInfo");
-            if (json == null)
-            {
-                return null;
-            }
-            if (json.Error != null)
-            {
-                Log.Error($"DeviceInfo error: {json.Error.ToString(Formatting.None)}");
-                return null;
-            }
-            JObject data = (JObject)json.Data;
-            return JsonConvert.DeserializeObject<UADeviceInfo>(data.ToString());
+            return Device.DeviceInfo();
         }
 
-        public AtxDeviceInfo Info()
+        public DeviceManager.AtxDeviceInfo Info()
         {
-            using (HSocket socket = HSocket.Create(_url))
-            {
-                var result = socket.HttpGet("/info");
-                if (result.Code == 200)
-                {
-                    return JsonConvert.DeserializeObject<AtxDeviceInfo>(result.Content);
-                }
-            }
-            return null;
+            return Device.Info();
         }
         #endregion
 
@@ -239,18 +233,11 @@ namespace HAtxLib
         /// </summary>
         public bool IsAlive()
         {
-            return RetryHelper.ExecuteWithRetry(
-                operation: () => DeviceInfo(),
-                successCondition: device => device != null,
-                maxRetries: Configuration.AtxConstants.DEFAULT_RETRY_COUNT,
-                delayMs: Configuration.AtxConstants.DEFAULT_RETRY_DELAY
-            ) != null;
+            return Device.IsAlive();
         }
         #endregion
 
         #region Screen Related
-
-        private readonly static Regex DumpsysDisplayScreenRegex = new Regex(".*DisplayViewport\\{.*?orientation=(?<orientation>.*?),.*?deviceWidth=(?<width>.*?),.*deviceHeight=(?<height>.*?)\\}");
 
         #region Get Screen Orientation
 
@@ -260,18 +247,7 @@ namespace HAtxLib
         /// <returns></returns>
         public object[] GetOrientation()
         {
-            string result = _client.Shell("dumpsys", "display");
-            Match match = DumpsysDisplayScreenRegex.Match(result);
-            int o;
-            if (match.Success)
-            {
-                o = int.Parse(match.Groups["orientation"].Value);
-            }
-            else
-            {
-                o = DeviceInfo().DisplayRotation;
-            }
-            return OrientationDict[(Orientation)o];
+            return Device.GetOrientation();
         }
 
         #endregion
@@ -280,9 +256,9 @@ namespace HAtxLib
         /// <summary>
         /// Set Screen Orientation
         /// </summary>
-        public void SetOrientation(Orientation orientation)
+        public void SetOrientation(DeviceManager.Orientation orientation)
         {
-            JsonRpc("setOrientation", OrientationDict[orientation][1]);
+            Device.SetOrientation(orientation);
         }
         #endregion
 
@@ -293,7 +269,7 @@ namespace HAtxLib
         /// </summary>
         public void FreezeRotation(bool freezed = true)
         {
-            JsonRpc("freezeRotation", freezed);
+            Device.FreezeRotation(freezed);
         }
         #endregion
 
@@ -304,8 +280,7 @@ namespace HAtxLib
         /// <returns></returns>
         public Size GetWindowSize()
         {
-            var info = Info();
-            return new Size(info.Display.Width, info.Display.Height);
+            return Device.GetWindowSize();
         }
         #endregion
 
@@ -316,7 +291,7 @@ namespace HAtxLib
         /// </summary>
         public void ScreenOn()
         {
-            JsonRpc("wakeUp");
+            Device.ScreenOn();
         }
 
         /// <summary>
@@ -324,7 +299,7 @@ namespace HAtxLib
         /// </summary>
         public void ScreenOff()
         {
-            JsonRpc("sleep");
+            Device.ScreenOff();
         }
 
         #endregion
@@ -340,17 +315,7 @@ namespace HAtxLib
         /// <exception cref="ATXNodeException"></exception>
         public bool Click(float x, float y)
         {
-            var pos = Rel2Abs(x, y);
-            var result = JsonRpc("click", new int[] { pos.X, pos.Y });
-            if (result == null)
-            {
-                return false;
-            }
-            if (result.Error != null)
-            {
-                throw new ATXNodeException("Click fail", result.Error);
-            }
-            return result.Data is bool s && s;
+            return Screen.Click(x, y);
         }
 
         /// <summary>
@@ -362,11 +327,7 @@ namespace HAtxLib
         /// <returns></returns>
         public bool DoubleClick(float x, float y, int wait = 60)
         {
-            var pos = Rel2Abs(x, y);
-            AtxTouch.Down(this, pos.X, pos.Y).Up(pos.X, pos.Y);
-            Thread.Sleep(wait);
-            Click(x, y);
-            return false;
+            return Screen.DoubleClick(x, y, wait);
         }
 
         /// <summary>
@@ -377,9 +338,7 @@ namespace HAtxLib
         /// <param name="time"></param>
         public void LongClick(float x, float y, int time = 500)
         {
-            Thread.Sleep(UINodeClickExistDelay);
-            var pos = Rel2Abs(x, y);
-            AtxTouch.Down(this, pos.X, pos.Y).Wait(time).Up(pos.X, pos.Y);
+            Screen.LongClick(x, y, time);
         }
         #endregion
 
@@ -395,18 +354,7 @@ namespace HAtxLib
         /// <returns></returns>
         public bool Swipe(float fx, float fy, float lx, float ly, int duration = 55)
         {
-            if (duration < 2)
-            {
-                duration = 2;
-            }
-            var fpos = Rel2Abs(fx, fy);
-            var lpos = Rel2Abs(lx, ly);
-            var result = JsonRpc("swipe", fpos.X, fpos.Y, lpos.X, lpos.Y, duration);
-            if (result == null)
-            {
-                return false;
-            }
-            return result.Data is bool s && s;
+            return Screen.Swipe(fx, fy, lx, ly, duration);
         }
 
         #endregion
@@ -415,20 +363,17 @@ namespace HAtxLib
 
         public void TouchDown(float x, float y)
         {
-            var pos = Rel2Abs(x, y);
-            AtxTouch.Down(this, pos.X, pos.Y);
+            Screen.TouchDown(x, y);
         }
 
         public void TouchMove(float x, float y)
         {
-            var pos = Rel2Abs(x, y);
-            AtxTouch.Move(this, pos.X, pos.Y);
+            Screen.TouchMove(x, y);
         }
 
         public void TouchUp(float x, float y)
         {
-            var pos = Rel2Abs(x, y);
-            AtxTouch.Up(this, pos.X, pos.Y);
+            Screen.TouchUp(x, y);
         }
         #endregion
 
@@ -444,19 +389,7 @@ namespace HAtxLib
         /// <returns></returns>
         public bool Drag(float fx, float fy, float lx, float ly, int duration = 55)
         {
-            if (duration < 2)
-            {
-                duration = 2;
-            }
-            duration *= 200;
-            var fpos = Rel2Abs(fx, fy);
-            var lpos = Rel2Abs(lx, ly);
-            var result = JsonRpc("drag", fpos.X, fpos.Y, lpos.X, lpos.Y, duration);
-            if (result == null)
-            {
-                return false;
-            }
-            return result.Data is bool s && s;
+            return Screen.Drag(fx, fy, lx, ly, duration);
         }
         #endregion
 
@@ -486,209 +419,54 @@ namespace HAtxLib
 
         #region App Related
 
-        public AppInfo GetAppInfo(string package)
+        public AppManager.AppInfo GetAppInfo(string package)
         {
-            using (HSocket socket = HSocket.Create(_url))
-            {
-                var result = socket.HttpGet($"/packages/{package}/info");
-                if (result == null)
-                {
-                    return new AppInfo();
-                }
-                var info = JsonConvert.DeserializeObject<AppInfo>(result.Content);
-                return info;
-            }
+            return Apps.GetAppInfo(package);
         }
 
         public void AppStart(string package, bool monkey = false, bool stop = false, bool wait = false, string activity = null)
         {
-            if (stop)
-            {
-                AppStop(package);
-            }
-            if (monkey)
-            {
-                _client.Shell("monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1");
-                if (wait)
-                {
-                    AppWait(package);
-                }
-                return;
-            }
-            if (string.IsNullOrWhiteSpace(activity))
-            {
-                var info = GetAppInfo(package);
-                if (info.Success)
-                {
-                    activity = info.Data.MainActivity;
-                    if (activity.IndexOf('.') == -1)
-                    {
-                        activity = "." + activity;
-                    }
-                }
-            }
-            Log.Debug($"Start APP: {package}/{activity}");
-            _client.Shell("am", "start", "-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER", "-n", $"{package}/{activity}");
-            if (wait)
-            {
-                AppWait(package);
-            }
+            Apps.AppStart(package, monkey, stop, wait, activity);
         }
 
         public void AppStop(string package)
         {
-            _client.Shell("am", "force-stop", package);
+            Apps.AppStop(package);
         }
 
         public void AppClear(string package)
         {
-            _client.Shell("pm", "clear", package);
+            Apps.AppClear(package);
         }
 
         public void AppUninstall(string package)
         {
-            _client.Shell("pm", "uninstall", package);
+            Apps.AppUninstall(package);
         }
 
         public void AppUninstallAll(params string[] excludes)
         {
-            List<string> list = new List<string>() {
-                "com.github.uiautomator",
-                "com.github.uiautomator.test"
-            };
-            list.AddRange(excludes);
-            var apps = _client.AppList("-3");
-            foreach (string app in apps)
-            {
-                if (list.Contains(app))
-                {
-                    continue;
-                }
-                AppUninstall(app);
-            }
+            Apps.AppUninstallAll(excludes);
         }
 
         public void AppStopAll(params string[] excludes)
         {
-            List<string> list = new List<string>() {
-                "com.github.uiautomator",
-                "com.github.uiautomator.test"
-            };
-            list.AddRange(excludes);
-            List<string> apps = _client.AppRunningList();
-            foreach (string app in apps)
-            {
-                if (list.Contains(app))
-                {
-                    continue;
-                }
-                AppStop(app);
-            }
-
+            Apps.AppStopAll(excludes);
         }
 
         public int AppPidOf(string package)
         {
-            using (HSocket socket = HSocket.Create(_url))
-            {
-                var result = socket.HttpGet($"/pidof/{package}");
-                if (result == null)
-                {
-                    return -1;
-                }
-                if (int.TryParse(result.Content, out int pid))
-                {
-                    return pid;
-                }
-            }
-            return -1;
+            return Apps.AppPidOf(package);
         }
 
-        public AppCurrentInfo AppCurrent()
+        public AppManager.AppCurrentInfo AppCurrent()
         {
-            AppCurrentInfo info = new AppCurrentInfo();
-            var result = _client.Shell("dumpsys", "window", "windows");
-            Regex focus = new Regex("mCurrentFocus=Window\\{.*?\\s+(?<package>[^\\s]+)/(?<activity>[^\\s]+)\\}");
-            Match match = focus.Match(result);
-            if (match.Success)
-            {
-                info.Package = match.Groups["package"].Value;
-                info.Activity = match.Groups["activity"].Value;
-                return info;
-            }
-            result = _client.Shell("dumpsys", "activity", "activities");
-            Regex record = new Regex("mResumedActivity: ActivityRecord\\{.*?\\s+(?<package>[^\\s]+)/(?<activity>[^\\s]+)\\s.*?\\}");
-            match = record.Match(result);
-            if (match.Success)
-            {
-                info.Package = match.Groups["package"].Value;
-                result = _client.Shell("dumpsys", "activity", "top");
-                Regex activity = new Regex("ACTIVITY (?<package>[^\\s]+)/(?<activity>[^/\\s]+) \\w+ pid=(?<pid>\\d+)");
-                var matchs = activity.Matches(result);
-                if (matchs.Count > 0)
-                {
-                    for (int i = 0; i < matchs.Count; i++)
-                    {
-                        if (matchs[i].Groups["package"].Value == info.Package)
-                        {
-                            info.Activity = matchs[i].Groups["activity"].Value;
-                            info.Pid = int.TryParse(matchs[i].Groups["pid"].Value, out int pid) ? pid : 0;
-                            return info;
-                        }
-                    }
-                }
-            }
-            return null;
+            return Apps.AppCurrent();
         }
 
         public bool AppWait(string package, int timeout = Configuration.AtxConstants.DEFAULT_TIMEOUT, string activity = null, bool front = false)
         {
-            long deadline = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
-            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() < deadline)
-            {
-                try
-                {
-                    if (front)
-                    {
-                        var info = AppCurrent();
-                        if (info == null)
-                        {
-                            continue;
-                        }
-                        if (info.Package == package)
-                        {
-                            if (!string.IsNullOrWhiteSpace(activity))
-                            {
-                                if (activity == info.Activity)
-                                {
-                                    return true;
-                                }
-                            }
-                            else
-                            {
-                                return true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var list = _client.AppRunningList();
-                        if (list.Contains(package))
-                        {
-                            return true;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Debug($"AppWait check failed: {ex.Message}");
-                }
-                finally
-                {
-                    Thread.Sleep(1000);
-                }
-            }
-            return false;
+            return Apps.AppWait(package, timeout, activity, front);
         }
 
         #endregion
@@ -697,103 +475,27 @@ namespace HAtxLib
 
         public void ImeClearText()
         {
-            ImeWait();
-            ADB.Shell("am", "broadcast", "-a", "ADB_CLEAR_TEXT");
+            IME.ImeClearText();
         }
 
         public void ImeInputText(string text, bool clear = false)
         {
-            ImeWait();
-            string data = Convert.ToBase64String(Encoding.UTF8.GetBytes(text));
-            string type = "ADB_SET_TEXT";
-            if (!clear)
-            {
-                type = "ADB_INPUT_TEXT";
-            }
-            ADB.Shell("am", "broadcast", "-a", type, "--es", "text", data);
+            IME.ImeInputText(text, clear);
         }
 
         public void ImeWait(int timeout = Configuration.AtxConstants.IME_WAIT_TIMEOUT)
         {
-            long deadline = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
-            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() < deadline)
-            {
-                bool show = ImeCurrent(out string ime);
-                if (!ime.StartsWith($"mCurMethodId={Configuration.AtxConstants.FAST_INPUT_IME_PACKAGE}"))
-                {
-                    ImeSet(true);
-                    Thread.Sleep(500);
-                    continue;
-                }
-                if (show)
-                {
-                    return;
-                }
-                Thread.Sleep(200);
-            }
-            Log.Warn($"IME was not ready after {timeout}ms timeout");
+            IME.ImeWait(timeout);
         }
 
         public void ImeSet(bool fastime)
         {
-            string fast_ime = Configuration.AtxConstants.FAST_INPUT_IME_PACKAGE;
-            if (fastime)
-            {
-                ADB.Shell("ime", "enable", fast_ime);
-                ADB.Shell("ime", "set", fast_ime);
-            }
-            else
-            {
-                ADB.Shell("ime", "disable", fast_ime);
-            }
+            IME.ImeSet(fastime);
         }
 
         public bool ImeCurrent(out string ime)
         {
-            var result = ADB.Shell("dumpsys", "input_method");
-            Regex regex = new Regex("mCurMethodId=([-_./\\w]+)");
-            Match match = regex.Match(result);
-            if (match.Success)
-            {
-                ime = match.Groups[0].Value;
-            }
-            else
-            {
-                ime = "";
-            }
-            return result.Contains("mInputShown=true");
-        }
-
-        #endregion
-
-        #region Coordinate System Conversion
-        /// <summary>
-        /// Convert Coordinate System
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <returns></returns>
-        internal Point Rel2Abs(float x, float y)
-        {
-            Point pos = new Point();
-            Size size = GetWindowSize();
-            if (x > 1)
-            {
-                pos.X = (int)x;
-            }
-            else
-            {
-                pos.X = (int)(x * size.Width);
-            }
-            if (y > 1)
-            {
-                pos.Y = (int)y;
-            }
-            else
-            {
-                pos.Y = (int)(y * size.Height);
-            }
-            return pos;
+            return IME.ImeCurrent(out ime);
         }
 
         #endregion
@@ -1263,23 +965,6 @@ namespace HAtxLib
 
         #endregion
 
-        #region Screen Orientation
-        private readonly static Dictionary<Orientation, object[]> OrientationDict = new Dictionary<Orientation, object[]>() {
-            { Orientation.Natural, new object[] { 0, "natural", "n", 0 } },
-            { Orientation.Left, new object[] { 1, "left", "l", 90 } },
-            { Orientation.Upsidedown, new object[] { 2, "upsidedown", "u", 180 } },
-            { Orientation.Right, new object[] { 3, "right", "r", 270 } }
-        };
-
-        public enum Orientation
-        {
-            Natural = 0,
-            Left,
-            Upsidedown,
-            Right
-        }
-        #endregion
-
         #region PressKey (Buttons)
         private readonly static Dictionary<PressKey, string> PressKeyDict = new Dictionary<PressKey, string>() {
             { PressKey.Home, "home" },
@@ -1321,193 +1006,6 @@ namespace HAtxLib
             Camera,
             Power
         }
-        #endregion
-
-        #region Device Information
-        public class AtxDeviceInfo
-        {
-            [JsonProperty("udid")]
-            public string udid { get; set; }
-            [JsonProperty("version")]
-            public string Version { get; set; }
-            [JsonProperty("serial")]
-            public string Serial { get; set; }
-            [JsonProperty("brand")]
-            public string Brand { get; set; }
-            [JsonProperty("model")]
-            public string Model { get; set; }
-            [JsonProperty("hwaddr")]
-            public string Hwaddr { get; set; }
-            [JsonProperty("sdk")]
-            public int Sdk { get; set; }
-            [JsonProperty("agentVersion")]
-            public string AgentVersion { get; set; }
-            [JsonProperty("display")]
-            public DisplayInfo Display { get; set; }
-            [JsonProperty("battery")]
-            public BatteryInfo Battery { get; set; }
-            [JsonProperty("memory")]
-            public MemoryInfo Memory { get; set; }
-            [JsonProperty("cpu")]
-            public CpuInfo Cpu { get; set; }
-            [JsonProperty("arch")]
-            public object Arch { get; set; }
-            [JsonProperty("owner")]
-            public object Owner { get; set; }
-            [JsonProperty("presenceChangedAt")]
-            public object PresenceChangedAt { get; set; }
-            [JsonProperty("usingBeganAt")]
-            public object UsingBeganAt { get; set; }
-            [JsonProperty("product")]
-            public object Product { get; set; }
-            [JsonProperty("provider")]
-            public object Provider { get; set; }
-
-            public class DisplayInfo
-            {
-                [JsonProperty("width")]
-                public int Width { get; set; }
-                [JsonProperty("height")]
-                public int Height { get; set; }
-            }
-            public class BatteryInfo
-            {
-                [JsonProperty("acPowered")]
-                public bool AcPowered { get; set; }
-                [JsonProperty("usbPowered")]
-                public bool UsbPowered { get; set; }
-                [JsonProperty("wirelessPowered")]
-                public bool WirelessPowered { get; set; }
-                [JsonProperty("present")]
-                public bool Present { get; set; }
-                [JsonProperty("status")]
-                public int Status { get; set; }
-                [JsonProperty("health")]
-                public int Health { get; set; }
-                [JsonProperty("level")]
-                public int Level { get; set; }
-                [JsonProperty("scale")]
-                public int Scale { get; set; }
-                [JsonProperty("voltage")]
-                public int Voltage { get; set; }
-                [JsonProperty("temperature")]
-                public int Temperature { get; set; }
-                [JsonProperty("technology")]
-                public string Technology { get; set; }
-            }
-            public class MemoryInfo
-            {
-                [JsonProperty("total")]
-                public long Total { get; set; }
-
-                [JsonProperty("around")]
-                public string Around { get; set; }
-            }
-            public class CpuInfo
-            {
-                [JsonProperty("cores")]
-                public int Cores { get; set; }
-                [JsonProperty("hardware")]
-                public string Hardware { get; set; }
-            }
-        }
-        #endregion
-
-        #region APP Information
-        public class AppInfo
-        {
-            [JsonProperty("data")]
-            public DataInfo Data { get; set; }
-            [JsonProperty("success")]
-            public bool Success { get; set; } = false;
-            [JsonProperty("description")]
-            public string Description { get; set; }
-
-            public class DataInfo
-            {
-                [JsonProperty("packageName")]
-                public string PackageName { get; set; }
-                [JsonProperty("mainActivity")]
-                public string MainActivity { get; set; }
-                [JsonProperty("label")]
-                public string Label { get; set; }
-                [JsonProperty("versionName")]
-                public string VersionName { get; set; }
-                [JsonProperty("versionCode")]
-                public long VersionCode { get; set; }
-                [JsonProperty("size")]
-                public long Size { get; set; }
-            }
-        }
-        #endregion
-
-        #region AppCurrent
-        public class AppCurrentInfo
-        {
-            [JsonProperty("package")]
-            public string Package { get; set; }
-            [JsonProperty("activity")]
-            public string Activity { get; set; }
-            [JsonProperty("pid")]
-            public int Pid { get; set; } = -1;
-        }
-        #endregion
-
-        #region Touch
-
-        internal class AtxTouch
-        {
-            private readonly HAtx _atx;
-            internal AtxTouch(HAtx atx)
-            {
-                _atx = atx;
-            }
-
-            public AtxTouch Down(int x, int y)
-            {
-                Event(0, x, y);
-                return this;
-            }
-
-            public AtxTouch Up(int x, int y)
-            {
-                Event(1, x, y);
-                return this;
-            }
-
-            public AtxTouch Move(int x, int y)
-            {
-                Event(2, x, y);
-                return this;
-            }
-
-            public AtxTouch Wait(int wait)
-            {
-                Thread.Sleep(wait);
-                return this;
-            }
-
-            private void Event(int @event, int x, int y)
-            {
-                _ = _atx.JsonRpc("injectInputEvent", @event, x, y, 0) ?? throw new ATXException("AtxTouch.Move fail");
-            }
-
-            public static AtxTouch Down(HAtx atx, int x, int y)
-            {
-                return new AtxTouch(atx).Down(x, y);
-            }
-
-            public static AtxTouch Up(HAtx atx, int x, int y)
-            {
-                return new AtxTouch(atx).Up(x, y);
-            }
-
-            public static AtxTouch Move(HAtx atx, int x, int y)
-            {
-                return new AtxTouch(atx).Move(x, y);
-            }
-        }
-
         #endregion
     }
 }
