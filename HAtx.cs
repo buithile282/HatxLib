@@ -75,6 +75,12 @@ namespace HAtxLib
 
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the HAtx class for controlling an Android device
+        /// </summary>
+        /// <param name="serial">Device serial number (UDID)</param>
+        /// <param name="init">Whether to initialize the device (install ATX agent, start UIAutomator). Default is true.</param>
+        /// <exception cref="ATXIniterException">Thrown when device initialization fails after maximum retry attempts</exception>
         public HAtx(string serial, bool init = true)
         {
             _serial = serial;
@@ -102,6 +108,11 @@ namespace HAtxLib
             }
         }
 
+        /// <summary>
+        /// Runs a script on the device
+        /// </summary>
+        /// <param name="script">Script to execute</param>
+        /// <param name="notify">Notification callback when script completes</param>
         public void RunScript(IScript script, Action notify)
         {
             HTry.Run(() => {
@@ -174,6 +185,10 @@ namespace HAtxLib
         #endregion
 
         #region Set DEBUG
+        /// <summary>
+        /// Enables or disables debug logging
+        /// </summary>
+        /// <param name="debug">True to enable debug mode, false to disable</param>
         public void SetDebug(bool debug = true)
         {
             _debug = debug;
@@ -183,7 +198,7 @@ namespace HAtxLib
 
         #region Mobile display information page
         /// <summary>
-        /// Mobile display information page
+        /// Displays device information on the mobile screen
         /// </summary>
         public void ShowInfo()
         {
@@ -193,8 +208,9 @@ namespace HAtxLib
 
         #region DUMP Screen
         /// <summary>
-        /// DUMP Screen
+        /// Dumps the UI hierarchy from the screen
         /// </summary>
+        /// <returns>XML string representing the UI hierarchy, or null if failed</returns>
         public string DumpHierarchy()
         {
             return HRuntime.Run("Screen DUMP", () => {
@@ -587,6 +603,10 @@ namespace HAtxLib
             _client.Shell("pm", "uninstall", package);
         }
 
+        /// <summary>
+        /// Uninstalls all user-installed apps except specified exclusions
+        /// </summary>
+        /// <param name="excludes">Package names to exclude from uninstallation</param>
         public void AppUninstallAll(params string[] excludes)
         {
             List<string> list = new List<string>() {
@@ -605,6 +625,10 @@ namespace HAtxLib
             }
         }
 
+        /// <summary>
+        /// Stops all running apps except specified exclusions
+        /// </summary>
+        /// <param name="excludes">Package names to exclude from stopping</param>
         public void AppStopAll(params string[] excludes)
         {
             List<string> list = new List<string>() {
