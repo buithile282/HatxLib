@@ -125,6 +125,7 @@
     <Compile Include="Catch\ATXException.cs" />
     <Compile Include="Catch\ATXIniterException.cs" />
     <Compile Include="Configuration\AtxConstants.cs" />
+    <Compile Include="Core\ScreenOperations.cs" />
     <Compile Include="Extend\String.cs" />
     <Compile Include="HAtx.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
