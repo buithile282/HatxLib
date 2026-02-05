@@ -56,12 +56,12 @@ namespace HAtxLib.ADB {
 						client.DownloadFile(url, file);
 					}
 				});
-				Console.WriteLine($"DOWN {file}: completed");
+				HLog.Get<ADBServer>("ADB").Info($"DOWN {file}: completed");
 			} catch (Exception e) {
 				if (File.Exists(file)) {
 					File.Delete(file);
 				}
-				Console.WriteLine($"DOWN {file}: 失败");
+				HLog.Get<ADBServer>("ADB").Info($"DOWN {file}: failed");
 				throw e;
 			}
 		}
