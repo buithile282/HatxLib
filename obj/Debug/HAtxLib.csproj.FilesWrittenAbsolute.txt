@@ -1,0 +1,4 @@
+/home/runner/work/HatxLib/HatxLib/obj/Debug/.NETFramework,Version=v4.7.2.AssemblyAttribute.cs
+/home/runner/work/HatxLib/HatxLib/obj/Debug/HAtxLib.Properties.Resources.resources
+/home/runner/work/HatxLib/HatxLib/obj/Debug/HAtxLib.dll
+/home/runner/work/HatxLib/HatxLib/obj/Debug/HAtxLib.pdb
