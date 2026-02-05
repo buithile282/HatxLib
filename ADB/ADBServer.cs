@@ -40,7 +40,7 @@ namespace HAtxLib.ADB {
 			}
 		}
 
-		#region 下载
+		#region Download
 		private static void GithubDown(string url, string file) {
 			try {
 				string path = Path.GetDirectoryName(file);
@@ -50,13 +50,13 @@ namespace HAtxLib.ADB {
 				if (File.Exists(file)) {
 					return;
 				}
-				HRuntime.Run("下载任务", () => {
+				HRuntime.Run("Download Task", () => {
 					using (var client = new WebClient()) {
 						client.Headers.Add("user-agent", "Hell");
 						client.DownloadFile(url, file);
 					}
 				});
-				Console.WriteLine($"DOWN {file}: 完成");
+				Console.WriteLine($"DOWN {file}: completed");
 			} catch (Exception e) {
 				if (File.Exists(file)) {
 					File.Delete(file);

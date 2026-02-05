@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace HAtxLib.Utils {
 	public class HRuntime {
-		private readonly static HLog Log = HLog.Get<HRuntime>("计时器");
+		private readonly static HLog Log = HLog.Get<HRuntime>("Timer");
 
 		public static void Run(Action action) {
 			Run("HRuntime", action);
@@ -13,7 +13,7 @@ namespace HAtxLib.Utils {
 			var watch = Stopwatch.StartNew();
 			action.Invoke();
 			watch.Stop();
-			Log.Warn($"{name} 执行时间: {watch.Elapsed.TotalMilliseconds}/ms");
+			Log.Warn($"{name} execution time: {watch.Elapsed.TotalMilliseconds}ms");
 		}
 
 		public static T Run<T>(Func<T> action) {
@@ -24,7 +24,7 @@ namespace HAtxLib.Utils {
 			var watch = Stopwatch.StartNew();
 			T value = action.Invoke();
 			watch.Stop();
-			Log.Warn($"{name} 执行时间: {watch.Elapsed.TotalMilliseconds}/ms");
+			Log.Warn($"{name} execution time: {watch.Elapsed.TotalMilliseconds}ms");
 			return value;
 		}
 
