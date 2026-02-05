@@ -1,30 +1,32 @@
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\HAtxLib.dll.config
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\HAtxLib.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\HAtxLib.pdb
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\ICSharpCode.SharpZipLib.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\Newtonsoft.Json.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\websocket-sharp.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\Newtonsoft.Json.xml
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\bin\Debug\websocket-sharp.xml
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.AssemblyReference.cache
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.Properties.Resources.resources
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.GenerateResource.cache
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.CoreCompileInputs.cache
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.Up2Date
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.pdb
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\HAtxLib.dll.config
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\HAtxLib.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\HAtxLib.pdb
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\ICSharpCode.SharpZipLib.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\Newtonsoft.Json.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\websocket-sharp.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\Newtonsoft.Json.xml
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\bin\Debug\websocket-sharp.xml
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.AssemblyReference.cache
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.Properties.Resources.resources
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.GenerateResource.cache
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.CoreCompileInputs.cache
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.csproj.Up2Date
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.dll
-C:\Users\D.NGUYEN\Downloads\Telegram Desktop\Code c#\ATX-AGENT\HAtxLib\obj\Debug\HAtxLib.pdb
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/HAtxLib.dll.config
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/HAtxLib.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/HAtxLib.pdb
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/ICSharpCode.SharpZipLib.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/Newtonsoft.Json.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/websocket-sharp.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/Newtonsoft.Json.xml
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/bin/Debug/websocket-sharp.xml
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.AssemblyReference.cache
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.Properties.Resources.resources
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.GenerateResource.cache
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.CoreCompileInputs.cache
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.Up2Date
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.pdb
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/HAtxLib.dll.config
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/HAtxLib.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/HAtxLib.pdb
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/ICSharpCode.SharpZipLib.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/Newtonsoft.Json.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/websocket-sharp.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/Newtonsoft.Json.xml
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/bin/Debug/websocket-sharp.xml
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.AssemblyReference.cache
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.Properties.Resources.resources
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.GenerateResource.cache
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.CoreCompileInputs.cache
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.csproj.Up2Date
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.dll
+C:/Users/D.NGUYEN/Downloads/Telegram Desktop/Code c#/ATX-AGENT/HAtxLib/obj/Debug/HAtxLib.pdb
+/home/runner/work/HatxLib/HatxLib/obj/Debug/HAtxLib.dll
+/home/runner/work/HatxLib/HatxLib/obj/Debug/HAtxLib.pdb

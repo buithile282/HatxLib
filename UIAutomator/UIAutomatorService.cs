@@ -4,7 +4,7 @@ using System;
 
 namespace HAtxLib.UIAutomator {
 	internal class UIAutomatorService {
-		private readonly static string SERVICE_NAME = "uiautomator";
+		private readonly static string SERVICE_NAME = AtxConstants.UIAUTOMATOR_SERVICE_NAME;
 		private readonly static string _path = $"/services/{SERVICE_NAME}";
 		private readonly string _url;
 
