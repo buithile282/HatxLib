@@ -40,8 +40,6 @@ namespace HAtxLib
         public ADBClient ADB => _client;
         public InitHelper Initer => _initer;
         
-        internal string AtxAgentUrl => _url;
-        
         public ScreenOperations Screen => _screenOperations ??= new ScreenOperations(this);
         public AppManager Apps => _appManager ??= new AppManager(this);
         public InputMethodManager IME => _inputMethodManager ??= new InputMethodManager(this);
