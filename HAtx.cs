@@ -29,44 +29,18 @@ namespace HAtxLib
         private string _url = null;
         private bool _debug = false;
 
-        public int Port
-        {
-            get
-            {
-                return _port;
-            }
-        }
-        public string UDID
-        {
-            get
-            {
-                return _serial;
-            }
-        }
-
-        public ADBClient ADB
-        {
-            get
-            {
-                return _client;
-            }
-        }
-
-        public InitHelper Initer
-        {
-            get
-            {
-                return _initer;
-            }
-        }
+        public int Port => _port;
+        public string UDID => _serial;
+        public ADBClient ADB => _client;
+        public InitHelper Initer => _initer;
 
         #region Global Settings
 
-        public int UINodeMaxWaitTime { get; set; } = 2000;
+        public int UINodeMaxWaitTime { get; set; } = Configuration.AtxConstants.MAX_WAIT_TIME;
         // Delay during detection
-        public int UINodeClickExistDelay { get; set; } = 60;
+        public int UINodeClickExistDelay { get; set; } = Configuration.AtxConstants.UI_NODE_CLICK_EXIST_DELAY;
         // Click delay
-        public int UINodeClickDelay { get; set; } = 100;
+        public int UINodeClickDelay { get; set; } = Configuration.AtxConstants.UI_NODE_CLICK_DELAY;
 
         #endregion
 
@@ -77,21 +51,36 @@ namespace HAtxLib
             if (init)
             {
                 _initer = new InitHelper(_client);
-                while (true)
-                {
-                    try
-                    {
-                        _initer.Install();
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-                }
+                TryInitialize(Configuration.AtxConstants.MAX_INIT_RETRIES);
                 Log.Info($"HAtx<{_serial}> Connect: {Connect()}");
                 HRuntime.Run("Run UIAUTOMATOR", () => Log.Info($"HAtx<{_serial}> RunUiautomator: {RunUiautomator()}"));
             }
+        }
+
+        /// <summary>
+        /// Attempts to initialize the device with retry logic
+        /// </summary>
+        /// <param name="maxRetries">Maximum number of retry attempts</param>
+        /// <returns>True if initialization succeeded</returns>
+        private bool TryInitialize(int maxRetries = Configuration.AtxConstants.MAX_INIT_RETRIES)
+        {
+            for (int i = 0; i < maxRetries; i++)
+            {
+                try
+                {
+                    _initer.Install();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn($"Initialization attempt {i + 1}/{maxRetries} failed: {ex.Message}");
+                    if (i < maxRetries - 1)
+                    {
+                        Thread.Sleep(Configuration.AtxConstants.INIT_RETRY_DELAY);
+                    }
+                }
+            }
+            throw new ATXException($"Failed to initialize device after {maxRetries} attempts");
         }
 
         public void RunScript(IScript script, Action notify)
@@ -149,13 +138,8 @@ namespace HAtxLib
         #endregion
 
         #region UI Service
-        private UIAutomatorService UIService
-        {
-            get
-            {
-                return new UIAutomatorService(this);
-            }
-        }
+        private UIAutomatorService _uiService;
+        private UIAutomatorService UIService => _uiService ??= new UIAutomatorService(this);
         #endregion
 
         #region Set DEBUG
@@ -228,7 +212,7 @@ namespace HAtxLib
             }
             if (json.Error != null)
             {
-                Console.WriteLine($"DeviceInfo: {json.Error.ToString(Formatting.None)}");
+                Log.Error($"DeviceInfo error: {json.Error.ToString(Formatting.None)}");
                 return null;
             }
             JObject data = (JObject)json.Data;
@@ -251,22 +235,16 @@ namespace HAtxLib
 
         #region Is Online
         /// <summary>
-        /// Check if online
+        /// Check if device is online/alive
         /// </summary>
         public bool IsAlive()
         {
-            int size = 10;
-            while (size-- > 0)
-            {
-                var device = DeviceInfo();
-                if (device == null)
-                {
-                    Thread.Sleep(500);
-                    continue;
-                }
-                return true;
-            }
-            return false;
+            return RetryHelper.ExecuteWithRetry(
+                operation: () => DeviceInfo(),
+                successCondition: device => device != null,
+                maxRetries: Configuration.AtxConstants.DEFAULT_RETRY_COUNT,
+                delayMs: Configuration.AtxConstants.DEFAULT_RETRY_DELAY
+            ) != null;
         }
         #endregion
 
@@ -663,7 +641,7 @@ namespace HAtxLib
             return null;
         }
 
-        public bool AppWait(string package, int timeout = 20000, string activity = null, bool front = false)
+        public bool AppWait(string package, int timeout = Configuration.AtxConstants.DEFAULT_TIMEOUT, string activity = null, bool front = false)
         {
             long deadline = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
             while (DateTimeOffset.Now.ToUnixTimeMilliseconds() < deadline)
@@ -701,9 +679,9 @@ namespace HAtxLib
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-
+                    Log.Debug($"AppWait check failed: {ex.Message}");
                 }
                 finally
                 {
@@ -735,13 +713,13 @@ namespace HAtxLib
             ADB.Shell("am", "broadcast", "-a", type, "--es", "text", data);
         }
 
-        public void ImeWait(int timeout = 5000)
+        public void ImeWait(int timeout = Configuration.AtxConstants.IME_WAIT_TIMEOUT)
         {
             long deadline = DateTimeOffset.Now.ToUnixTimeMilliseconds() + timeout;
             while (DateTimeOffset.Now.ToUnixTimeMilliseconds() < deadline)
             {
                 bool show = ImeCurrent(out string ime);
-                if (!ime.StartsWith("mCurMethodId=com.github.uiautomator/.FastInputIME"))
+                if (!ime.StartsWith($"mCurMethodId={Configuration.AtxConstants.FAST_INPUT_IME_PACKAGE}"))
                 {
                     ImeSet(true);
                     Thread.Sleep(500);
@@ -753,11 +731,12 @@ namespace HAtxLib
                 }
                 Thread.Sleep(200);
             }
+            Log.Warn($"IME was not ready after {timeout}ms timeout");
         }
 
         public void ImeSet(bool fastime)
         {
-            string fast_ime = "com.github.uiautomator/.FastInputIME";
+            string fast_ime = Configuration.AtxConstants.FAST_INPUT_IME_PACKAGE;
             if (fastime)
             {
                 ADB.Shell("ime", "enable", fast_ime);
@@ -1087,7 +1066,7 @@ namespace HAtxLib
                 try
                 {
                     string version = _client.Shell(ATX_AGENT_PATH, "version");
-                    Console.WriteLine($"AtxAgent version: {version}");
+                    Log.Info($"AtxAgent version: {version}");
                     if (version == "dev")
                     {
                         return false;
