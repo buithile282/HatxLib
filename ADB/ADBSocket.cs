@@ -31,7 +31,7 @@ namespace HAtxLib.ADB {
         }
 
         public ADBSocket(string serial, int port = 5037) {
-			Log = HLog.Get<ADBSocket>($"ADB套接字<{serial}>");
+			Log = HLog.Get<ADBSocket>($"ADB Socket<{serial}>");
             _serial = serial;
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             _socket.ReceiveTimeout = 5000;
@@ -65,7 +65,7 @@ namespace HAtxLib.ADB {
         }
         #endregion
 
-        #region 开启事务
+        #region Open Transaction
         public void OpenTransport(params object[] argv) {
             string command = string.Join(":", new string[] { "host", "transport", _serial });
             if (argv.Length > 0) {
@@ -80,7 +80,7 @@ namespace HAtxLib.ADB {
         }
         #endregion
 
-        #region 端口转发
+        #region Port Forward
         public void Forward(string local, string remote, bool norebind = false) {
             var list = new List<string> {
                 "forward"
@@ -185,7 +185,7 @@ namespace HAtxLib.ADB {
         }
         #endregion
 
-        #region 异步事务
+        #region Async Transaction
         private void Sync() {
             string command = "sync:";
             string resultStr = string.Format("{0}{1}", command.Length.ToString("X4"), command);
@@ -195,14 +195,14 @@ namespace HAtxLib.ADB {
         }
 		#endregion
 
-		#region 获取状态
+		#region Get Status
         public string GetState() {
 			OpenTransport("get-state");
 			return ReadToEnd();
 		}
 		#endregion
 
-		#region 发送指令
+		#region Send指令
 
 		public string Command(params object[] argv) {
 			string command = string.Join(":", argv);
@@ -215,7 +215,7 @@ namespace HAtxLib.ADB {
 
 		#endregion
 
-		#region 验证请求
+		#region Verify Request
 		private void CheckOkay() {
             byte[] buf = new byte[4];
             _socket.Receive(buf, 0, 4, SocketFlags.None);
@@ -225,12 +225,12 @@ namespace HAtxLib.ADB {
             } else if (state == FAIL) {
                 throw new ADBSocketException($"FAIL: {ReadToEnd()}");
             } else {
-                throw new ADBSocketException("未知错误");
+                throw new ADBSocketException("Unknown error");
             }
         }
         #endregion
 
-        #region 读取
+        #region Read
         private string ReadToEnd() {
             byte[] reply = new byte[4];
             var message = Read(reply);
@@ -288,7 +288,7 @@ namespace HAtxLib.ADB {
         }
         #endregion
 
-        #region 获取Port
+        #region Get Port
         private bool CheckPortUse(int port) {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)) {
                 try {
@@ -318,7 +318,7 @@ namespace HAtxLib.ADB {
         }
 		#endregion
 
-		#region 释放
+		#region Dispose
 		public void Dispose() {
             try { _socket.Shutdown(SocketShutdown.Both); } catch { }
             try { _socket.Close(); } catch { }

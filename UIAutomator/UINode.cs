@@ -10,7 +10,7 @@ using System.Xml;
 
 namespace HAtxLib.UIAutomator {
 	public class UINode {
-		private readonly static HLog Log = HLog.Get<HLog>("选择器");
+		private readonly static HLog Log = HLog.Get<HLog>("Selector");
 		private readonly HAtx _atx;
 		private readonly By _by;
 		private XmlNodeList _nodes = null;
