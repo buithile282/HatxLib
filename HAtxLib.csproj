@@ -127,6 +127,9 @@
     <Compile Include="Configuration\AtxConstants.cs" />
     <Compile Include="Core\HAtx.Async.cs" />
     <Compile Include="Core\ScreenOperations.cs" />
+    <Compile Include="Core\AppManager.cs" />
+    <Compile Include="Core\DeviceManager.cs" />
+    <Compile Include="Core\InputMethodManager.cs" />
     <Compile Include="Extend\String.cs" />
     <Compile Include="HAtx.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
