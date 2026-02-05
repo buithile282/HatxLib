@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 namespace HAtxLib
 {
     /// <summary>
-    /// Async operations for HAtx
+    /// Async operations for HAtx.
+    /// Note: These methods use Task.Run to execute synchronous operations on the thread pool.
+    /// They provide a convenient async API for compatibility with async/await patterns.
     /// </summary>
     public partial class HAtx
     {
