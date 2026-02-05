@@ -1283,7 +1283,7 @@ namespace HAtxLib
                     _client.Shell("rm", $"{ANDROID_LOCAL_TMP_PATH}{app}.apk");
                 }
                 _client.Shell("pm", "uninstall", AtxConstants.UIAUTOMATOR_PACKAGE);
-                _client.Shell("pm", "uninstall", "com.github.uiautomator.test");
+                _client.Shell("pm", "uninstall", AtxConstants.UIAUTOMATOR_TEST_PACKAGE);
             }
             #endregion
 
